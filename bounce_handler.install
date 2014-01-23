@@ -1,0 +1,184 @@
+<?php
+
+/**
+ * Test and report Drupal installation requirements.
+ *
+ * @param $phase
+ *   The current system installation phase.
+ * @return
+ *   An array of system requirements.
+ */
+function bounce_handler_requirements($phase) {
+  $requirements = array();
+  // Ensure translations don't break at install time
+  $t = get_t();
+
+  $requirements['bmh']['title'] = $t('PHPMailer BMH');
+  if (!file_exists(drupal_get_path('module', 'bounce_handler') .'/phpmailer-bmh_rules.php')) {
+    $requirements['bmh']['description'] = $t('The PHPMailer Bounce handling package is not available. You need to <a href="!url">download</a> and install it. See the README file for bounce_handler.', array('!url' => 'http://sourceforge.net/projects/bmh/'));
+    $requirements['bmh']['severity'] = REQUIREMENT_ERROR;
+  }
+  else {
+    $requirements['bmh']['value'] = $t('Is installed');
+  }
+
+  $requirements['mimedecode']['title'] = $t('Mail::mimeDecode');
+  if (!(include 'Mail/mimeDecode.php')) {
+    $requirements['mimedecode']['description'] = $t('Mail::mimeDecode not available. Please install the relevant package for your operating system.');
+    $requirements['mimedecode']['severity'] = REQUIREMENT_ERROR;
+  }
+  else {
+    $requirements['mimedecode']['value'] = $t('Is installed');
+  }
+
+  $requirements['rfc822']['title'] = $t('Mail::RFC822');
+  if (!(include 'Mail/RFC822.php')) {
+    $requirements['rfc822']['description'] = $t('Mail::RFC822 not available. Please install the relevant package for your operating system.');
+    $requirements['rfc822']['severity'] = REQUIREMENT_ERROR;
+  }
+  else {
+    $requirements['rfc822']['value'] = $t('Is installed');
+  }
+  return $requirements;
+}
+
+/**
+ * Implementation of hook_install().
+ */
+function bounce_handler_install() {
+  // Create tables.
+  drupal_install_schema('bounce_handler');
+}
+
+/**
+ * Implementation of hook_uninstall().
+ */
+function bounce_handler_uninstall() {
+  // Remove tables.
+  drupal_uninstall_schema('bounce_handler');
+}
+
+function bounce_handler_schema() {
+  $schema['bounces'] = array(
+    'description' => 'Table that contains incoming bounces.',
+    'fields' => array(
+      'bid' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique bounce event ID.',
+      ),
+      'uid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The {users}.uid of the user who triggered the bounce.',
+      ),
+      'sid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'The statistics ID of this destination.',
+      ),
+      'timestamp' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Timestamp of when the bounce was received.',
+      ),
+      'destination' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The mail address the orginal mail was sent to',
+      ),
+      'bmh_no' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+        'description' => 'The ID for the event matching the bounce',
+      ),
+      'bmh_cat' => array(
+        'type' => 'varchar',
+        'length' => 16,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Category of bounce message, for example "dns_unknown" or "antispam"',
+      ),
+      'bmh_type' => array(
+        'type' => 'varchar',
+        'length' => 16,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'Type of bounce message, for example "hard" or "soft"',
+      ),
+      'severity' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'size' => 'tiny',
+        'description' => 'The severity level of the event; currently only 0 and 1',
+      ),
+      'message' => array(
+        'type' => 'text',
+        'not null' => TRUE,
+        'size' => 'big',
+        'description' => 'The full bounce.',
+      ),
+    ),
+    'primary key' => array('bid'),
+    'indexes' => array(
+      'destination' => array('destination'),
+      'sid' => array('sid'),
+    ),
+  );
+
+  $schema['bounce_statistics'] = array(
+    'description' => 'Stores bounce information per email address.',
+    'fields' => array(
+      'sid' => array(
+        'type' => 'serial',
+        'not null' => TRUE,
+        'description' => 'Primary Key: Unique bounce_statistics ID.',
+      ),
+      'count' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Counter for bounce events',
+      ),
+      'remove' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Counter for removal events',
+      ),
+      'mail' => array(
+        'type' => 'varchar',
+        'length' => 64,
+        'not null' => TRUE,
+        'default' => '',
+        'description' => 'The mail address the orginal mail was sent to',
+      ),
+      'timestamp' => array(
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Timestamp of when the last bounce was received.',
+      ),
+    ),
+    'indexes' => array(
+      'bounce_timestamp' => array('timestamp'),
+      'mail' => array('mail'),
+    ),
+    'primary key' => array('sid'),
+  );
+
+  return $schema;
+}
+

@@ -1,0 +1,11 @@
+;$Id$
+
+name = Bounce handling
+description = Logs and records bounce events to the database.
+version = 0.1
+core = 7.x
+files[] = bounce_handler.module
+files[] = bounce_handler.admin.inc
+files[] = bounce_handler.drush.inc
+
+
