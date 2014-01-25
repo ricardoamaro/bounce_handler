@@ -6,7 +6,7 @@
  */
 function bounce_handler_drush_help($section) {
   switch ($section) {
-    case 'symantec_admin:notifications':
+    case 'symantec-admin:notifications':
       return dt('Run messaging/notifications module cron.');
   }
 }

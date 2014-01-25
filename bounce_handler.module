@@ -20,7 +20,7 @@ function bounce_handler_help($path, $arg) {
  * Implementation of hook_menu().
  */
 function bounce_handler_menu() {
-  $items['admin/settings/bounce_handler'] = array(
+  $items['admin/config/bounce_handler/settings'] = array(
     'title' => 'Bounce handler settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('bounce_handler_admin_settings'),
