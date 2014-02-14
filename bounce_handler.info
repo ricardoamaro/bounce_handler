@@ -1,5 +1,3 @@
-;$Id$
-
 name = Bounce handling
 description = Logs and records bounce events to the database.
 version = 0.1

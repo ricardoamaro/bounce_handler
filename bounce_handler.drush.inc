@@ -1,6 +1,5 @@
 <?php
 
-
 /**
  * Implementation of hook_drush_command().
  */
@@ -64,9 +63,21 @@ function drush_bounce_handler_bounce() {
       ))
     ->expression('count', 'count + :inc', array(':inc' => 1))
     ->execute();
-    
-    //CHANGE TO DB_INSERT
-    db_query("INSERT INTO {bounces} (sid, uid, timestamp, destination, bmh_no, bmh_cat, bmh_type, severity, message) VALUES (%d, %d, %d, '%s', %d, '%s', '%s', %d, '%s')", $sid, isset($account->uid) ? $account->uid : 0, REQUEST_TIME, $destination, $result['rule_no'], $result['rule_cat'], $result['bounce_type'], $result['remove'], $incoming_bounce);
+        
+    db_insert('bounces')
+    ->fields(array('sid', 'uid', 'timestamp', 'destination', 'bmh_no', 'bmh_cat', 'bmh_type', 'severity', 'message'))
+    ->values(array(
+      'sid' => $sid,
+      'uid' => isset($account->uid) ? $account->uid : 0,
+      'timestamp' => REQUEST_TIME,
+      'destination' => $destination,
+      'bmh_no' => $result['rule_no'],
+      'bmh_cat' => $result['rule_cat'],
+      'bmh_type' => $result['bounce_type'],
+      'severity' => $result['remove'],
+      'message' => $incoming_bounce),
+      ))
+    ->execute();
   }
 }
 

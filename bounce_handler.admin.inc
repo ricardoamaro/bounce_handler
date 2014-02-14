@@ -1,5 +1,4 @@
 <?php
-// $Id$
 
 function bounce_handler_admin_settings() {
   $form['bounce_handler_row_limit'] = array(
