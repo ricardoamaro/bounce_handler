@@ -1,15 +1,5 @@
 <?php
-// $Id$
 
-/**
- * Implementation of hook_drush_help().
- */
-function bounce_handler_drush_help($section) {
-  switch ($section) {
-    case 'symantec-admin:notifications':
-      return dt('Run messaging/notifications module cron.');
-  }
-}
 
 /**
  * Implementation of hook_drush_command().
@@ -63,20 +53,20 @@ function drush_bounce_handler_bounce() {
       $result = bmhBodyRules($structure->body, '', TRUE);
     }
     // Find the user
-    $account = db_fetch_object(db_query("SELECT uid FROM {users} WHERE mail = '%s'", $destination));
+    $account = drush_db_fetch_object(db_query("SELECT uid FROM {users} WHERE mail = '%s'", $destination));
     // Now save the message in the DB, increase the counters
-    $time = $_SERVER['REQUEST_TIME'];
-
-    $sid = db_result(db_query("SELECT sid FROM {bounce_statistics} WHERE mail = '%s'", $destination));
-    if ($sid) {
-      db_query("UPDATE {bounce_statistics} SET count = count + 1, remove = remove + %d, timestamp = %d WHERE sid = %d", $result['remove'], $time, $sid);
-    }
-    else {
-      db_query("INSERT INTO {bounce_statistics} SET count = count + 1, remove = remove + %d, timestamp = %d, mail = '%s'", $result['remove'], $time, $destination);
-      $sid = db_last_insert_id('bounce_statistics', 'sid');
-    }
-
-    db_query("INSERT INTO {bounces} (sid, uid, timestamp, destination, bmh_no, bmh_cat, bmh_type, severity, message) VALUES (%d, %d, %d, '%s', %d, '%s', '%s', %d, '%s')", $sid, isset($account->uid) ? $account->uid : 0, $time, $destination, $result['rule_no'], $result['rule_cat'], $result['bounce_type'], $result['remove'], $incoming_bounce);
+        
+    db_merge('bounce_statistics') 
+    ->key(array('mail' => $destination))
+    ->fields(array(
+      'remove' => 'remove + ' . $result['remove'],
+      'timestamp' => REQUEST_TIME,
+      ))
+    ->expression('count', 'count + :inc', array(':inc' => 1))
+    ->execute();
+    
+    //CHANGE TO DB_INSERT
+    db_query("INSERT INTO {bounces} (sid, uid, timestamp, destination, bmh_no, bmh_cat, bmh_type, severity, message) VALUES (%d, %d, %d, '%s', %d, '%s', '%s', %d, '%s')", $sid, isset($account->uid) ? $account->uid : 0, REQUEST_TIME, $destination, $result['rule_no'], $result['rule_cat'], $result['bounce_type'], $result['remove'], $incoming_bounce);
   }
 }
 
